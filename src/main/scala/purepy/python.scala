@@ -1,10 +1,16 @@
 package purepy
 
+import cats.effect.Sync
 import cats.free._
 
 object python {
 
   type PythonIO[A] = Free[PythonOp, A]
+
+  implicit class PythonIOOps[A](pyio: PythonIO[A]) {
+    def exec[F[_]: Sync](implicit interpreter: Interpreter[F]): F[A] =
+      pyio foldMap interpreter.trans
+  }
 
   /**
     * Algebra for supported python operations
@@ -25,7 +31,7 @@ object python {
      *
      * @param name Path to script to be loaded (root is the classpath)
      */
-  def loadScript(name: String): PythonIO[Unit] = Free.liftF(LoadScript(name))
+  def loadScript(name: String): PythonIO[Unit] = Free liftF LoadScript(name)
 
   /**
     * Invoke a python function and return it's value
@@ -35,7 +41,7 @@ object python {
     * @tparam A Return type of the called python function
     */
   def invoke[A](functionName: String, arguments: List[Any]): PythonIO[A] =
-      Free.liftF(Invoke(functionName, arguments))
+      Free liftF Invoke(functionName, arguments)
 
   /**
     * Evaluate python code
@@ -43,7 +49,7 @@ object python {
     * @param code Python code to evaluate
     * @return Boolean true if the python code is sound
     */
-  def eval(code: String): PythonIO[Boolean] = Free.liftF(Eval(code))
+  def eval(code: String): PythonIO[Boolean] = Free liftF Eval(code)
 
   /**
     * Execute an expression and return the data from it
@@ -51,7 +57,7 @@ object python {
     * @param code Python code to evaluate
     * @tparam A Return type of python expression
     */
-  def expression[A](code: String): PythonIO[A] = Free.liftF(Expression(code))
+  def expression[A](code: String): PythonIO[A] = Free liftF Expression(code)
 
 }
 
